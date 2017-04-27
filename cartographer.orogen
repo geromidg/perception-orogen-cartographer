@@ -1,0 +1,113 @@
+name "cartographer"
+
+# version "0.1"
+
+using_task_library "transformer"
+using_library "cartographer"
+using_library "pcl_common-1.7"
+using_library "frame_helper"
+using_library "opencv"
+using_library "envire"
+
+import_types_from "base"
+import_types_from "envire" 
+import_types_from "frame_helper/Calibration.h"
+
+task_context "Task" do
+    
+    needs_configuration
+
+    # PROPERTIES
+    property("cameraCalibration", "/frame_helper/CameraCalibration").doc("Camera calibration parameters")
+
+    # frame transformations
+    property("camera_to_ptu","/base/Vector3d").doc("Translation vector from camera frame to pan tilt unit frame")
+    property("ptu_to_center","/base/Vector3d").doc("Translation vector from pan tilt unit to desired rover point")
+    property("ptu_rotation_offset","/base/Vector3d").doc("Rotation offset of the pan tilt unit (or the mounted camera) [yaw, pitch, roll] RADIANS")
+    property("body_rotation_offset","/base/Vector3d").doc("Rotation offset accounting for eventual imu/body mismatch [yaw, pitch, roll] RADIANS")
+
+    # local map properties
+    property("local_map_size","float",5.0).doc("Square size f the local map in meters")
+    property("local_map_resolution","float",0.03).doc("Resolution of each cell in meters")
+    property("slope_map_scale","int",8).doc("How many normal cell a slope map cell will contain")
+    property("pointcloud_cut_min","/base/Vector4d").doc("Minimum vertex where a local point cloud is supposed to be valid within the rover frame")
+    property("pointcloud_cut_max","/base/Vector4d").doc("Maximum vertex where a local point cloud is supposed to be valid within the rover frame")
+
+    # filters properties
+    property("leaf_size","float",0.015).doc("Leaf size of pc voxel filter")
+    property("k_points","int",20).doc("K points for statistical pc filter")
+    
+    # obstacle detection parameters
+    property("laplacian_kernel_size","int",9).doc("Size of the kernel used in the laplacian to detect rocks edges")
+    property("laplacian_threshold","float",100.0).doc("Threshold of the laplacian to detect rocks edges. It is not zet tied to a physical property.")
+    property("rover_normal_clearance","float",0.12).doc("Obstacles the rover can tolerate when there is no sinkage [m]")
+    property("rover_normal_gradeability","float",0.33).doc("Slope the rover can travel in nominal case [rad]")
+    property("obstacle_kernel_size","int",3).doc("Kernel size to dilate obstacle first time [cells]")
+    property("obstacle_iterations","int",2).doc("First obstacle dilation iterations")
+    property("obstacle_vicinity_kernel_size","int",3).doc("Kernel size to dilate obstacle second time [cells]")
+    property("obstacle_vicinity_iterations","int",3).doc("Second obstacle dilation iterations (area surrounding an obstacle)")
+
+    # gloabl map properties
+    property("global_map_size","float",30.0).doc("Square size of the global map in meters")
+    property("global_map_resolution","float",0.03).doc("Resolution of each cell in meters. For the moment keep it the same as local")
+    property("global_safety_offset","float",7.0).doc("Assuming the rover can not go into negative coordinates, how much margin more to have from (0,0) so that projected point cloud would not end up in negative coordinates")
+
+	# cost map properties
+    property("obstacle_cost_dilation","int",24).doc("Kernel size for how much an obstacle is dilated so that the rover can be considered a point")
+    property("obstacle_cost_dilation_niter","int",1).doc("Number of iterations of the cost dilation")
+	property("obstacle_blur","int",35).doc("Kernel size used to blur the cost map. Represent how far the influence of an obstacle spreads from its border")
+    property("obstacle_blur_max_cost","float",15.0).doc("Maximum cost added by obstacle blur")
+    property("slope_max_cost","float",4.0).doc("Maximum cost added by traversable slope")
+	property("max_cost_slope","float",0.63).doc("TBD should be tied to rover_normal_gradeability but why is it double here again?")
+	property("cost_base","float",1.0).doc("Minimum cost")
+	property("cost_offset","float",3.0).doc("Cost offset")
+	property("cost_max","float",21.0).doc("Maximum cost a cell can have. This cost means the cell is not traversable")
+
+	# envire properties
+	property("envire_origin","int",233).doc("Cell that must be origin for envire")
+	property("envire_size","int",300).doc("Cell that must be origin for envire")
+
+    # INPUT PORTS
+    input_port("distance_image", "/base/samples/DistanceImage" )
+    input_port("pose_vicon", "base/samples/RigidBodyState").doc "Position and orientation of the Robot given by vicon"
+    input_port("pose_imu", "base/samples/RigidBodyState").doc "Orientation of the Robot given by IMU"
+    input_port("pose_ptu", "base/samples/RigidBodyState").doc "Orientation of PTU"
+	input_port("sync_in", "int")
+
+    # OUTPUT PORTS
+    output_port "pointcloud_in", "/base/samples/Pointcloud"
+    output_port "pointcloud_filter", "/base/samples/Pointcloud"
+    output_port "heightMap_frame", "/base/samples/frame/Frame"
+    output_port "heightMapInterp_frame", "/base/samples/frame/Frame"
+    output_port "slopeMap_frame", "/base/samples/frame/Frame"
+    output_port "slopeMapThresholded_frame", "/base/samples/frame/Frame"
+    output_port "laplacian_frame", "/base/samples/frame/Frame"
+    output_port "laplacianThresholded_frame", "/base/samples/frame/Frame"
+    output_port "obstacles_frame", "/base/samples/frame/Frame"
+    output_port "traversability_frame", "/base/samples/frame/Frame"
+    output_port "mask_frame", "/base/samples/frame/Frame"
+    
+    output_port "global_frame", "/base/samples/frame/Frame"
+    output_port "debug_frame", "/base/samples/frame/Frame"
+    output_port "debug_frame2", "/base/samples/frame/Frame"
+    output_port "debug_frame3", "/base/samples/frame/Frame"
+
+    output_port "cost_frame", "/base/samples/frame/Frame"
+	
+    output_port('traversability_map', ro_ptr('std/vector</envire/BinaryEvent>'))
+    
+    # an incremental number is written to this port after each iteration
+    # of the update hook
+	output_port "sync_out", "int"
+	
+	# TRANSFORMERS
+	transformer do
+		transform "imu", "world_osg"
+		transform "body", "world_osg"
+		#align_port "current_pose"
+		max_latency 0.2
+	end
+    
+    port_driven
+end
+
