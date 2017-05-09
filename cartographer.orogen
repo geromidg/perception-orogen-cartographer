@@ -71,6 +71,9 @@ task_context "Task" do
     input_port("distance_image", "/base/samples/DistanceImage" )
     input_port("pose_vicon", "base/samples/RigidBodyState").doc "Position and orientation of the Robot given by vicon"
     input_port("pose_imu", "base/samples/RigidBodyState").doc "Orientation of the Robot given by IMU"
+	input_port("pose_in", "base/samples/RigidBodyState").doc "Total pose, either this one or imu and vicon separately"
+	input_port("ptu_pan", "double").doc "PTU pan angle in degrees!!"
+	input_port("ptu_tilt", "double").doc "PTU tilt angle in degrees!!"
     input_port("pose_ptu", "base/samples/RigidBodyState").doc "Orientation of PTU"
 	input_port("sync_in", "int")
 
@@ -104,6 +107,7 @@ task_context "Task" do
 	transformer do
 		transform "imu", "world_osg"
 		transform "body", "world_osg"
+		transform "body", "gnss_utm"
 		#align_port "current_pose"
 		max_latency 0.2
 	end

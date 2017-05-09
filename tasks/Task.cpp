@@ -164,7 +164,7 @@ void Task::updateHook()
     
     if(_distance_image.read(distance_image) == RTT::NewData)
     {
-			_pose_ptu.read(pose_ptu);
+			//_pose_ptu.read(pose_ptu); // not relevan (yet?) for hdpr
 			_pose_imu.read(pose_imu);
 			
 			// Start processing
@@ -177,79 +177,92 @@ void Task::updateHook()
 			local_map.pointColudFiltering();
 			t1[2] = base::Time::now();
 
-			//************************************************************************
+			//********************Transforms******************************************
 			
-			/********************
-			OLD ATTITUDE
-			*********************/
-			// Set up rotation
-			//double roll, pitch, yaw;
-			//pitch = -pose_imu.getPitch();
-			//roll = -pose_imu.getRoll();
-			//yaw = pose_imu.getYaw();
+			// Body attitude and psoition source choice
 			
-			if(_pose_vicon.connected()) // todo x,y,z are at the moment assumed to be there, will be changed
-			{
-				//_pose_vicon.read(pose_vicon);
-				//yaw = pose_vicon.getYaw();
-			}
-			else
-				std::cout << "huge issue" << std::endl;
-			
-			//float tmp_yaw = yaw;
-			//yaw = 0; // yaw to 0 for the moment TODO
-			
-			/********************
-			OLD ATTITUDE
-			*********************/
-
-			/********************
-			NEW ATTITUDE
-			*********************/
-			Eigen::Affine3d tf_imu, tf_vicon;
-			
-			
-			if(!_imu2world_osg.get(distance_image.time, tf_imu, false))
-			{
-				//throw std::runtime_error("[Cartographer] [FATAL ERROR]: transformation for transformer imu2world not found.");
-				//return;
-			}
-
-			if(!_body2world_osg.get(distance_image.time, tf_vicon, false))
-			{
-				//throw std::runtime_error("[Cartographer] [FATAL ERROR]: transformation for transformer body2world not found.");
-				//return;
-			}
-
-			// roll, pitch, yaw
-			double roll, pitch, yaw;
-			pose_imu.orientation = Eigen::Quaterniond(tf_imu.linear());
-			pose_vicon.orientation = Eigen::Quaterniond(tf_vicon.linear());
-
-			yaw = pose_vicon.getYaw();
-			pitch = -pose_imu.getPitch();
-			roll = -pose_imu.getRoll();
-			float tmp_yaw = yaw;
-			yaw = 0; // yaw to 0 for the moment TODO
-			
-
-			/********************
-			NEW ATTITUDE
-			*********************/
-			
+			// a component is connected giving already a pose referenced to the rover geometrical center
+			double x_pos, y_pos, z_pos;
+			double yaw, pitch, roll, tmp_yaw;
 			Eigen::Quaterniond attitude;
-			attitude = Eigen::Quaternion <double> (Eigen::AngleAxisd(yaw+body_rotation_offset[0], Eigen::Vector3d::UnitZ())*
-                                        Eigen::AngleAxisd(pitch+body_rotation_offset[1], Eigen::Vector3d::UnitY()) *
-										Eigen::AngleAxisd(roll+body_rotation_offset[2], Eigen::Vector3d::UnitX()));
-										
-			// dirty ptu fix
-			pitch = pose_ptu.getPitch();
-			roll = pose_ptu.getRoll();
-			yaw = pose_ptu.getYaw();
+
+			if(_pose_in.connected()) 
+			{
+				Eigen::Affine3d tf_pose;
+				// damn transformer, if a total pose is given, the target MUST be gnns_utm both here, in the .orogen and in the damn component providing the pose
+				if(!_body2gnss_utm.get(distance_image.time, tf_pose, false))
+				{
+					//throw std::runtime_error("[Cartographer] [FATAL ERROR]: transformation for transformer imu2gnss_utm not found.");
+					//return;
+				}
+				// roll, pitch, yaw
+				pose_in.orientation = Eigen::Quaterniond(tf_pose.linear());
+
+				yaw = pose_in.getYaw();
+				pitch = pose_in.getPitch();
+				roll = pose_in.getRoll();
+				tmp_yaw = yaw;
+				yaw = 0; // yaw to 0 for the moment TODO
+				
+				x_pos = tf_pose.translation().x();
+				y_pos = tf_pose.translation().y();
+				z_pos = tf_pose.translation().z();
+				
+				attitude = Eigen::Quaternion <double> (Eigen::AngleAxisd(yaw+body_rotation_offset[0], Eigen::Vector3d::UnitZ())*
+											Eigen::AngleAxisd(pitch+body_rotation_offset[1], Eigen::Vector3d::UnitY()) *
+											Eigen::AngleAxisd(roll+body_rotation_offset[2], Eigen::Vector3d::UnitX()));
+			}
+			// Otherwise, IMU and another component (typically vicon) are connected
+			else
+			{
+				Eigen::Affine3d tf_imu, tf_vicon;
+			
+			
+				if(!_imu2world_osg.get(distance_image.time, tf_imu, false))
+				{
+					//throw std::runtime_error("[Cartographer] [FATAL ERROR]: transformation for transformer imu2world not found.");
+					//return;
+				}
+
+				if(!_body2world_osg.get(distance_image.time, tf_vicon, false))
+				{
+					//throw std::runtime_error("[Cartographer] [FATAL ERROR]: transformation for transformer body2world not found.");
+					//return;
+				}
+
+				// roll, pitch, yaw
+				double roll, pitch, yaw;
+				pose_imu.orientation = Eigen::Quaterniond(tf_imu.linear());
+				pose_vicon.orientation = Eigen::Quaterniond(tf_vicon.linear());
+
+				yaw = pose_vicon.getYaw();
+				pitch = -pose_imu.getPitch();
+				roll = -pose_imu.getRoll();
+				tmp_yaw = yaw;
+				yaw = 0; // yaw to 0 for the moment TODO
+				
+				x_pos = tf_vicon.translation().x();
+				y_pos = tf_vicon.translation().y();
+				z_pos = tf_vicon.translation().z();
+				
+				attitude = Eigen::Quaternion <double> (Eigen::AngleAxisd(yaw+body_rotation_offset[0], Eigen::Vector3d::UnitZ())*
+											Eigen::AngleAxisd(pitch+body_rotation_offset[1], Eigen::Vector3d::UnitY()) *
+											Eigen::AngleAxisd(roll+body_rotation_offset[2], Eigen::Vector3d::UnitX()));
+			}
+			
+			// Managing PTU
+			
+			// dirty ptu fix with ad hoc HDPR ptu 2 panorama output convention
+			double ptu_pitch, ptu_yaw;
+			_ptu_pan.read(ptu_yaw);
+			_ptu_tilt.read(ptu_pitch);
+			ptu_pitch -= 90.0;
+			ptu_pitch = ptu_pitch/180.0*M_PI;
+			ptu_yaw = ptu_yaw/180.0*M_PI;
 			Eigen::Quaterniond ptu_attitude;
-			ptu_attitude = Eigen::Quaternion <double> (Eigen::AngleAxisd(yaw+ptu_rotation_offset[0], Eigen::Vector3d::UnitZ())*
-                                        Eigen::AngleAxisd(pitch+ptu_rotation_offset[1], Eigen::Vector3d::UnitY()) *
-										Eigen::AngleAxisd(roll+ptu_rotation_offset[2], Eigen::Vector3d::UnitX()));
+			ptu_attitude = Eigen::Quaternion <double> (Eigen::AngleAxisd(ptu_yaw+ptu_rotation_offset[0], Eigen::Vector3d::UnitZ())*
+										Eigen::AngleAxisd(ptu_pitch+ptu_rotation_offset[1], Eigen::Vector3d::UnitY()) *
+										Eigen::AngleAxisd(0+ptu_rotation_offset[2], Eigen::Vector3d::UnitX()));
 										
 			local_map.pointCloud2flatRobotReference(attitude, 
 													ptu_to_center,
@@ -281,32 +294,32 @@ void Task::updateHook()
             //*****************************global**height******************************
             
             
-            if(tf_vicon.translation().x() == tf_vicon.translation().x()) // not nan
+            if(x_pos == x_pos) // not nan
             {
             global_height_map.realWorldOrientation(local_map.getHeightMap(), local_map.getMask(), tmp_yaw);
 			t1[10] = base::Time::now();
 
             
-            global_height_map.addToWorld(tf_vicon.translation().x(), tf_vicon.translation().y(), tf_vicon.translation().z());
+            global_height_map.addToWorld(x_pos, y_pos, z_pos);
 			t1[11] = base::Time::now();
 
             //*****************************global**obstacle****************************
             
             global_obstacle_map.realWorldOrientation(local_map.getObstacles(), local_map.getMask(), tmp_yaw);
             
-            global_obstacle_map.addToWorld(tf_vicon.translation().x(), tf_vicon.translation().y(), 0.0);
+            global_obstacle_map.addToWorld(x_pos, y_pos, 0.0);
             
 			//*****************************global**slope*******************************
             
             global_slope_map.realWorldOrientation(local_map.getSlopeMap(), local_map.getMask(), tmp_yaw);
             
-            global_slope_map.addToWorld(tf_vicon.translation().x(), tf_vicon.translation().y(), 0.0);
+            global_slope_map.addToWorld(x_pos, y_pos, 0.0);
             
 			//*****************************global**slope_thres*************************
             
             global_slope_thresh_map.realWorldOrientation(local_map.getSlopeMapThresholded(), local_map.getMask(), tmp_yaw);
             
-            global_slope_thresh_map.addToWorld(tf_vicon.translation().x(), tf_vicon.translation().y(), 0.0);
+            global_slope_thresh_map.addToWorld(x_pos, y_pos, 0.0);
 			t1[12] = base::Time::now();
         
             
@@ -430,7 +443,7 @@ void Task::updateHook()
 			/* ########################## just display end ########################## */
 			
 			/* ########################## Display pointcloud ########################## */
-			/*pcl::PointCloud<pcl::PointXYZ>::Ptr p1 = local_map.getPointCloud();
+			pcl::PointCloud<pcl::PointXYZ>::Ptr p1 = local_map.getPointCloud();
 			pcl::PointCloud<pcl::PointXYZ>::Ptr p2 = local_map.getPointCloudFiltered();
 			base::samples::Pointcloud pp1;
 			base::samples::Pointcloud pp2;
@@ -439,7 +452,7 @@ void Task::updateHook()
 			fromPCLPointCloud(pp2, *p2, 1),
 			
 			_pointcloud_in.write(pp1);
-			_pointcloud_filter.write(pp2);*/
+			_pointcloud_filter.write(pp2);
 			/* ########################## Display pointcloud end ########################## */
 			t1[15] = base::Time::now();
 			
