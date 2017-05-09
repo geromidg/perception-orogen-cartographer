@@ -257,6 +257,7 @@ void Task::updateHook()
 			_ptu_pan.read(ptu_yaw);
 			_ptu_tilt.read(ptu_pitch);
 			ptu_pitch -= 90.0;
+			ptu_pitch *=-2;
 			ptu_pitch = ptu_pitch/180.0*M_PI;
 			ptu_yaw = ptu_yaw/180.0*M_PI;
 			Eigen::Quaterniond ptu_attitude;
