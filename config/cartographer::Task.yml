@@ -29,9 +29,11 @@ cost_base: 1.0
 cost_max: 21.0
 # Cost offset
 cost_offset: 3.0
+# Cost update area in meters (area around the rover where the cost map is updated)
+cost_update_area: 20.0
 # Cell that must be origin for envire
 envire_origin: 233
-# Cell that must be origin for envire
+# In cells
 envire_size: 300
 # Resolution of each cell in meters. For the moment keep it the same as local
 global_map_resolution: 0.03
@@ -148,16 +150,18 @@ cost_base: 1.0
 cost_max: 21.0
 # Cost offset
 cost_offset: 3.0
+# Cost update area in meters (area around the rover where the cost map is updated)
+cost_update_area: 20.0
 # Cell that must be origin for envire
-envire_origin: 0
-# Cell that must be origin for envire
-envire_size: 0
+envire_origin: 1667
+# In cells (same cell size as global map-1or2)
+envire_size: 4000
 # Resolution of each cell in meters. For the moment keep it the same as local
 global_map_resolution: 0.03
 # Square size of the global map in meters
-global_map_size: 100.0
+global_map_size: 200.0
 # Assuming the rover can not go into negative coordinates, how much margin more to have from (0,0) so that projected point cloud would not end up in negative coordinates
-global_safety_offset: 15.0
+global_safety_offset: 100.0
 # K points for statistical pc filter
 k_points: 20
 # Size of the kernel used in the laplacian to detect rocks edges
@@ -193,33 +197,33 @@ pointcloud_cut_max:
   data:
   - 10.0
   - 6.0
-  - 1.5
+  - 3.0
   - 0.0
 # Minimum vertex where a local point cloud is supposed to be valid within the rover frame
 pointcloud_cut_min:
   data:
   - 1.0
   - -6.0
-  - -1.5
+  - -3.0
   - 0.0
 # Rotation offset of the pan tilt unit (or the mounted camera) [yaw, pitch, roll] RADIANS
 ptu_rotation_offset:
   data:
   - 0.0
-  - 0.0
+  - -0.05
   - 0.0
 # Translation vector from pan tilt unit to desired rover point
 ptu_to_center:
   data:
   - 0.138 
   - -0.005
-  - 1.286
+  - 1.86 # to the top plate it is 1.286
 # Obstacles the rover can tolerate when there is no sinkage [m] # TBD
 rover_normal_clearance: 0.22
 # Slope the rover can travel in nominal case [rad]
 rover_normal_gradeability: 0.33
-# How many normal cell a slope map cell will contain
-slope_map_scale: 8
+# How many normal cell a slope map cell will contain (was 8)
+slope_map_scale: 8 
 # Maximum cost added by traversable slope
 slope_max_cost: 4.0
 
