@@ -62,6 +62,7 @@ task_context "Task" do
 	property("cost_base","float",1.0).doc("Minimum cost")
 	property("cost_offset","float",3.0).doc("Cost offset")
 	property("cost_max","float",21.0).doc("Maximum cost a cell can have. This cost means the cell is not traversable")
+	property("cost_update_area","float",20.0).doc("Cost update area in meters (area around the rover where the cost map is updated")
 
 	# envire properties
 	property("envire_origin","int",233).doc("Cell that must be origin for envire")

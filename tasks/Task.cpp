@@ -75,11 +75,12 @@ bool Task::configureHook()
 	global_slope_thresh_map.setMapParameters(_global_map_size.get(),_global_map_resolution.get(),_global_safety_offset.get());
 	
 	// set cost map
+	cost_map.setMapParameters(_global_map_size.get(),_global_map_resolution.get());
 	cost_map.setObstacleDilation(_obstacle_cost_dilation.get(), _obstacle_cost_dilation_niter.get());
 	cost_map.setMapBlurring(_obstacle_blur.get(), _obstacle_blur_max_cost.get());
 	cost_map.setAdditionalSlopePenalty(_max_cost_slope.get(), _slope_max_cost.get());
 	cost_map.setCostConstants(_cost_base.get(), _cost_offset.get(), _cost_max.get());
-
+	cost_map.setUpdateArea(_cost_update_area.get());
 	
 	// set up envire (todo check if every time)
 	
@@ -294,7 +295,8 @@ void Task::updateHook()
             
             //*****************************global**height******************************
             
-            
+			cv::Mat a1,a2,a3,b1,b2,b3;
+			cv::Mat temp_cost1, temp_cost2, no_cost1, no_cost2;
             if(x_pos == x_pos) // not nan
             {
             global_height_map.realWorldOrientation(local_map.getHeightMap(), local_map.getMask(), tmp_yaw);
@@ -326,40 +328,51 @@ void Task::updateHook()
             
 			//**********************************cost***********************************
 			
-			// todo find more direct approach
-			cv::Mat tmp1,tmp2,tmp3;
+			// update cost of the map in a region around the rover
+			// extract thresholded slope and obstacle maps plus normal slope map around the rover.
+			cv::Point2f tmp_size(cost_map.getCostUpdateAreaCells(),cost_map.getCostUpdateAreaCells());
+			cv::Point2f relative_origin(floor((y_pos+_global_safety_offset.get())/_global_map_resolution.get()), 
+										floor((x_pos+_global_safety_offset.get())/_global_map_resolution.get())); // inversed for opencv
+
+			global_slope_map.getGlobalMap().copyTo(a1);
+			global_obstacle_map.getGlobalMap().copyTo(a2); 
+			global_slope_thresh_map.getGlobalMap().copyTo(a3);
 			
-			global_slope_map.getGlobalMap().copyTo(tmp1);
-			global_obstacle_map.getGlobalMap().copyTo(tmp2); 
-			global_slope_thresh_map.getGlobalMap().copyTo(tmp3);
+			a1(cv::Rect(relative_origin-tmp_size, relative_origin+tmp_size)).copyTo(b1);
+			a2(cv::Rect(relative_origin-tmp_size, relative_origin+tmp_size)).copyTo(b2);
+			a3(cv::Rect(relative_origin-tmp_size, relative_origin+tmp_size)).copyTo(b3);
+
+			std::cout << relative_origin << " ddddddd " << tmp_size << std::endl;
+			// Are those the thresholds on the thresholded values (?)
+			// If it is the case, they must be added as parameters. obstacles are binary unless they are not obstacles in different observations. 
+			// Then the average "certainety" that they are actualk obstacles decreases towrd 0 or increases toward 1
+			// 0.4 is a good measure on when to actually consider stuff obstacle
+			b2.setTo(1.0,b2>0.4);
+			b3.setTo(1.0,b3>0.4);
 			
-			tmp2.setTo(1.0,tmp2>0.4);
-			tmp3.setTo(1.0,tmp3>0.4);
+			b2.setTo(0.0,b2<0.4);
+			b3.setTo(0.0,b3<0.4);
 			
-			tmp2.setTo(0.0,tmp2<0.4);
-			tmp3.setTo(0.0,tmp3<0.4);
-			
-			cost_map.calculateCostMap(tmp1, 
-									tmp2, 
-									tmp3);
+			cost_map.calculateCostMap(b1, b2, b3, relative_origin-tmp_size, relative_origin+tmp_size);
 									
 			t1[13] = base::Time::now();
 
-									
 			//**********************************cost*to*envire*************************
-			cv::Mat temp_cost1, temp_cost2, no_cost1, no_cost2;
-			temp_cost1 = cost_map.getCostMap();
+			cost_map.getCostMap().copyTo(temp_cost1);
+
 			temp_cost1(cv::Rect(_envire_origin.get(), _envire_origin.get(),_envire_size.get()+1,_envire_size.get()+1)).copyTo(temp_cost2); // only terrain region
+			_global_safety_offset.get()/_global_map_resolution.get();
 			temp_cost2.convertTo(temp_cost2, CV_8UC1);
-			
+
 			no_cost1 = global_height_map.getGlobalMap();
 			no_cost1(cv::Rect(_envire_origin.get(), _envire_origin.get(),_envire_size.get()+1,_envire_size.get()+1)).copyTo(no_cost2);
-			
+
 			temp_cost2.setTo(0,no_cost2!=no_cost2);
 
 			envire::TraversabilityGrid::ArrayType& travData = 
 				mpTravGrid->getGridData(envire::TraversabilityGrid::TRAVERSABILITY);
-			
+
+			// set only the same data that have been updated with the cost
 			int cost;
 			for(int x=0; x < Nrow;  x++)
 			{
@@ -382,6 +395,8 @@ void Task::updateHook()
 
 
 			}
+			else
+				return;//avoid running when position is nan
 
 			/* ########################## just display ########################## */
 			
@@ -414,37 +429,37 @@ void Task::updateHook()
 			_obstacles_frame.write(customImg);
 			
 			// traversability map
-			/*customImg = customCVconversion(local_map.getTraversability());
-			_traversability_frame.write(customImg);
+			//customImg = customCVconversion(local_map.getTraversability());
+			//_traversability_frame.write(customImg);
 			
 			// mask
-			customImg = customCVconversion(local_map.getMask());
-			_mask_frame.write(customImg);
+			//customImg = customCVconversion(local_map.getMask());
+			//_mask_frame.write(customImg);
 			
 			// global map
-			customImg = customCVconversion(global_height_map.getGlobalMap());
-			_global_frame.write(customImg);
+			//customImg = customCVconversion(global_height_map.getGlobalMap());
+			//_global_frame.write(customImg);
 			
 			// debug map
-			customImg = customCVconversion(global_obstacle_map.getGlobalMap());
+			customImg = customCVconversion(temp_cost1);
 			_debug_frame.write(customImg);
 
 			// debug map2
-			customImg = customCVconversion(global_slope_map.getGlobalMap());
-			_debug_frame2.write(customImg);
+			//customImg = customCVconversion(b2);
+			//_debug_frame2.write(customImg);
 			
 			// debug map3
-			customImg = customCVconversion(global_slope_thresh_map.getGlobalMap());
-			_debug_frame3.write(customImg);
+			//customImg = customCVconversion(b3);
+			//_debug_frame3.write(customImg);
 			
 			// cost
-			customImg = customCVconversion(temp_cost2);
-			_cost_frame.write(customImg);*/
+			//customImg = customCVconversion(temp_cost2);
+			//_cost_frame.write(customImg);
 			
 			/* ########################## just display end ########################## */
 			
 			/* ########################## Display pointcloud ########################## */
-			pcl::PointCloud<pcl::PointXYZ>::Ptr p1 = local_map.getPointCloud();
+			/*pcl::PointCloud<pcl::PointXYZ>::Ptr p1 = local_map.getPointCloud();
 			pcl::PointCloud<pcl::PointXYZ>::Ptr p2 = local_map.getPointCloudFiltered();
 			base::samples::Pointcloud pp1;
 			base::samples::Pointcloud pp2;
@@ -453,12 +468,12 @@ void Task::updateHook()
 			fromPCLPointCloud(pp2, *p2, 1),
 			
 			_pointcloud_in.write(pp1);
-			_pointcloud_filter.write(pp2);
+			_pointcloud_filter.write(pp2);*/
 			/* ########################## Display pointcloud end ########################## */
 			t1[15] = base::Time::now();
 			
-			//for(int iii = 1; iii<16; iii++)
-			//	std::cout << "time" << iii << ": " << (t1[iii]-t1[iii-1]) << std::endl;
+			for(int iii = 1; iii<16; iii++)
+				std::cout << "time" << iii << ": " << (t1[iii]-t1[iii-1]) << std::endl;
 
 			_sync_out.write(sync_count);
 			sync_count++;
