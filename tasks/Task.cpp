@@ -155,6 +155,10 @@ bool Task::startHook()
     if (! TaskBase::startHook())
         return false;
     return true;
+
+     bool tmpbool = true;
+     _sync_out.write(tmpbool);
+
 }
 void Task::updateHook()
 {
@@ -165,6 +169,10 @@ void Task::updateHook()
     
     if(_distance_image.read(distance_image) == RTT::NewData)
     {
+		// stop pancam panorama movement
+		     bool tmpbool2 = false;
+     		_sync_out.write(tmpbool2);
+
 			//_pose_ptu.read(pose_ptu); // not relevan (yet?) for hdpr
 			_pose_imu.read(pose_imu);
 			
@@ -189,6 +197,7 @@ void Task::updateHook()
 
 			if(_pose_in.connected()) 
 			{
+
 				Eigen::Affine3d tf_pose;
 				// damn transformer, if a total pose is given, the target MUST be gnns_utm both here, in the .orogen and in the damn component providing the pose
 				if(!_body2gnss_utm.get(distance_image.time, tf_pose, false))
@@ -216,6 +225,7 @@ void Task::updateHook()
 			// Otherwise, IMU and another component (typically vicon) are connected
 			else
 			{
+
 				Eigen::Affine3d tf_imu, tf_vicon;
 			
 			
@@ -296,9 +306,10 @@ void Task::updateHook()
             //*****************************global**height******************************
             
 			cv::Mat a1,a2,a3,b1,b2,b3;
-			cv::Mat temp_cost1, temp_cost2, no_cost1, no_cost2;
+		cv::Mat temp_cost1, temp_cost2, no_cost1, no_cost2;
             if(x_pos == x_pos) // not nan
             {
+
             global_height_map.realWorldOrientation(local_map.getHeightMap(), local_map.getMask(), tmp_yaw);
 			t1[10] = base::Time::now();
 
@@ -342,7 +353,6 @@ void Task::updateHook()
 			a2(cv::Rect(relative_origin-tmp_size, relative_origin+tmp_size)).copyTo(b2);
 			a3(cv::Rect(relative_origin-tmp_size, relative_origin+tmp_size)).copyTo(b3);
 
-			std::cout << relative_origin << " ddddddd " << tmp_size << std::endl;
 			// Are those the thresholds on the thresholded values (?)
 			// If it is the case, they must be added as parameters. obstacles are binary unless they are not obstacles in different observations. 
 			// Then the average "certainety" that they are actualk obstacles decreases towrd 0 or increases toward 1
@@ -437,8 +447,8 @@ void Task::updateHook()
 			//_mask_frame.write(customImg);
 			
 			// global map
-			//customImg = customCVconversion(global_height_map.getGlobalMap());
-			//_global_frame.write(customImg);
+			customImg = customCVconversion(global_height_map.getGlobalMap());
+			_global_frame.write(customImg);
 			
 			// debug map
 			customImg = customCVconversion(temp_cost1);
@@ -475,7 +485,8 @@ void Task::updateHook()
 			for(int iii = 1; iii<16; iii++)
 				std::cout << "time" << iii << ": " << (t1[iii]-t1[iii-1]) << std::endl;
 
-			_sync_out.write(sync_count);
+			bool tmpbool = true;
+			_sync_out.write(tmpbool);
 			sync_count++;
 	}
 }

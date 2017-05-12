@@ -102,7 +102,7 @@ task_context "Task" do
     
     # an incremental number is written to this port after each iteration
     # of the update hook
-	output_port "sync_out", "int"
+	output_port "sync_out", "bool"
 	
 	# TRANSFORMERS
 	transformer do
