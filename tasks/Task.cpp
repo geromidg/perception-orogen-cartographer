@@ -156,9 +156,15 @@ bool Task::startHook()
         return false;
     return true;
 
+	// start pancam_panorama
      bool tmpbool = true;
      _sync_out.write(tmpbool);
-
+     
+    // set goal
+    Eigen::Vector3d goal = _reach_goal.get();
+    base::samples::RigidBodyState goal_rbs;
+    goal_rbs.position = goal;
+	_goal.write(goal_rbs);
 }
 void Task::updateHook()
 {

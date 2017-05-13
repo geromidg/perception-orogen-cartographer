@@ -67,6 +67,8 @@ task_context "Task" do
 	# envire properties
 	property("envire_origin","int",233).doc("Cell that must be origin for envire")
 	property("envire_size","int",300).doc("Cell that must be origin for envire")
+	property("reach_goal","/base/Vector3d").doc("Goal the cartographer has to reach")
+
 
     # INPUT PORTS
     input_port("distance_image", "/base/samples/DistanceImage" )
@@ -99,6 +101,8 @@ task_context "Task" do
     output_port "cost_frame", "/base/samples/frame/Frame"
 	
     output_port('traversability_map', ro_ptr('std/vector</envire/BinaryEvent>'))
+    
+    output_port("goal", "base/samples/RigidBodyState").doc "Position the cartographer should reach"
     
     # an incremental number is written to this port after each iteration
     # of the update hook
