@@ -36,6 +36,7 @@ task_context "Task" do
     # filters properties
     property("leaf_size","float",0.015).doc("Leaf size of pc voxel filter")
     property("k_points","int",20).doc("K points for statistical pc filter")
+    property("use_statistical_filter","bool",false).doc("Use statistical pc filtering or not")
     
     # obstacle detection parameters
     property("laplacian_kernel_size","int",9).doc("Size of the kernel used in the laplacian to detect rocks edges")
@@ -53,7 +54,7 @@ task_context "Task" do
     property("global_safety_offset","float",7.0).doc("Assuming the rover can not go into negative coordinates, how much margin more to have from (0,0) so that projected point cloud would not end up in negative coordinates")
 
 	# cost map properties
-    property("obstacle_cost_dilation","int",24).doc("Kernel size for how much an obstacle is dilated so that the rover can be considered a point")
+	property("robot_size","float",0.7).doc("in meters, needed for obstacle dilation")    
     property("obstacle_cost_dilation_niter","int",1).doc("Number of iterations of the cost dilation")
 	property("obstacle_blur","int",35).doc("Kernel size used to blur the cost map. Represent how far the influence of an obstacle spreads from its border")
     property("obstacle_blur_max_cost","float",15.0).doc("Maximum cost added by obstacle blur")
