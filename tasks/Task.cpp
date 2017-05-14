@@ -48,7 +48,7 @@ bool Task::configureHook()
     // set algorithm parameters
     local_map.setCameraParameters(calib.width,calib.height,calib.cx,calib.cy, calib.fx, calib.fy);
 	local_map.setMapParameters(_local_map_size.get(),_local_map_resolution.get(),_slope_map_scale.get());
-	local_map.setPcFiltersParameters(_leaf_size.get(),_k_points.get());
+	local_map.setPcFiltersParameters(_leaf_size.get(),_k_points.get(), _use_statistical_filter.get());
 	Eigen::Vector4d a = _pointcloud_cut_min.get();
 	Eigen::Vector4d b = _pointcloud_cut_max.get();
 	local_map.setPcLimitsParameters(a.cast<float>(),b.cast<float>());
@@ -76,7 +76,7 @@ bool Task::configureHook()
 	
 	// set cost map
 	cost_map.setMapParameters(_global_map_size.get(),_global_map_resolution.get());
-	cost_map.setObstacleDilation(_obstacle_cost_dilation.get(), _obstacle_cost_dilation_niter.get());
+	cost_map.setObstacleDilation(_robot_size.get(), _obstacle_cost_dilation_niter.get());
 	cost_map.setMapBlurring(_obstacle_blur.get(), _obstacle_blur_max_cost.get());
 	cost_map.setAdditionalSlopePenalty(_max_cost_slope.get(), _slope_max_cost.get());
 	cost_map.setCostConstants(_cost_base.get(), _cost_offset.get(), _cost_max.get());
