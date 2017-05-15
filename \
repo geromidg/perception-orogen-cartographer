@@ -208,7 +208,8 @@ void Task::updateHook()
 
 				Eigen::Affine3d tf_pose;
 				// damn transformer, if a total pose is given, the target MUST be gnns_utm both here, in the .orogen and in the damn component providing the pose
-				if(!_body2viso_world.get(distance_image.time, tf_pose, false))
+				//if(!_body2viso_world.get(distance_image.time, tf_pose, false))
+				if(!_body2viso_world.get(base::Time::now(), tf_pose, false))
 				{
 					//throw std::runtime_error("[Cartographer] [FATAL ERROR]: transformation for transformer imu2gnss_utm not found.");
 					//return;
