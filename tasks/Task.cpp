@@ -161,7 +161,6 @@ bool Task::startHook()
      
     // set goal
     Eigen::Vector3d goal = _reach_goal.get();
-    base::samples::RigidBodyState goal_rbs;
     goal_rbs.position = goal;
 	_goal.write(goal_rbs);
 	
@@ -212,10 +211,8 @@ void Task::updateHook()
 				{
 					//throw std::runtime_error("[Cartographer] [FATAL ERROR]: transformation for transformer imu2gnss_utm not found.");
 					//return;
-                    std::cout << "NO TRAFO\n";
-				} else {
-                    std::cout << "GOT TRAFO\n";
-                }
+              
+				} 
 				// roll, pitch, yaw
 				pose_in.orientation = Eigen::Quaterniond(tf_pose.linear());
 
@@ -229,7 +226,6 @@ void Task::updateHook()
 				y_pos = tf_pose.translation().y();
 				z_pos = tf_pose.translation().z();
 				
-				//std::cout << "CARTOGRAPHER KLJ " << x_pos << " " << y_pos << " " << z_pos << std::endl;
 				
 				attitude = Eigen::Quaternion <double> (Eigen::AngleAxisd(yaw+body_rotation_offset[0], Eigen::Vector3d::UnitZ())*
 											Eigen::AngleAxisd(pitch+body_rotation_offset[1], Eigen::Vector3d::UnitY()) *
@@ -502,6 +498,9 @@ void Task::updateHook()
 			bool tmpbool = true;
 			_sync_out.write(tmpbool);
 			sync_count++;
+			
+			_goal.write(goal_rbs);
+
 	}
 }
 

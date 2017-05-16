@@ -73,6 +73,8 @@ tasks/Task.cpp, and will be put in the cartographer namespace.
 		base::samples::RigidBodyState pose_imu;
 		base::samples::RigidBodyState pose_vicon;
 		base::samples::RigidBodyState pose_in;
+		base::samples::RigidBodyState goal_rbs;
+
 
 		int sync_count;
 		

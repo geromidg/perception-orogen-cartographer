@@ -112,7 +112,7 @@ task_context "Task" do
 	# TRANSFORMERS
 	transformer do
 		transform "imu", "world_osg"
-		#transform "body", "world_osg"
+		transform "body", "world_osg"
 		transform "body", "viso_world"
 		#align_port "current_pose"
 		max_latency 1.0
