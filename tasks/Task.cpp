@@ -194,9 +194,9 @@ void Task::updateHook()
 			t1[2] = base::Time::now();
 
 			//********************Transforms******************************************
-			
+
 			// Body attitude and psoition source choice
-			
+
 			// a component is connected giving already a pose referenced to the rover geometrical center
 			double x_pos, y_pos, z_pos;
 			double yaw, pitch, roll, tmp_yaw;
@@ -225,7 +225,6 @@ void Task::updateHook()
 				x_pos = tf_pose.translation().x();
 				y_pos = tf_pose.translation().y();
 				z_pos = tf_pose.translation().z();
-				
 				
 				attitude = Eigen::Quaternion <double> (Eigen::AngleAxisd(yaw+body_rotation_offset[0], Eigen::Vector3d::UnitZ())*
 											Eigen::AngleAxisd(pitch+body_rotation_offset[1], Eigen::Vector3d::UnitY()) *
@@ -276,9 +275,13 @@ void Task::updateHook()
 			double ptu_pitch, ptu_yaw;
 			_ptu_pan.read(ptu_yaw);
 			_ptu_tilt.read(ptu_pitch);
+			//ptu_pitch += 45.0;
+//			ptu_pitch -= 90.0;
 			//ptu_pitch -= 90.0;
-			//ptu_pitch *=-2;
+//			ptu_pitch *=-2;
+			//ptu_pitch += 45.0;
 			ptu_pitch = (180 - ptu_pitch)/2;
+			ptu_pitch -= 12.5;
 			ptu_pitch = ptu_pitch/180.0*M_PI;
 			ptu_yaw = ptu_yaw/180.0*M_PI;
 			Eigen::Quaterniond ptu_attitude;
