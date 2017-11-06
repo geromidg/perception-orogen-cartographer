@@ -36,6 +36,7 @@ task_context "Task" do
     # filters properties
     property("leaf_size","float",0.015).doc("Leaf size of pc voxel filter")
     property("k_points","int",20).doc("K points for statistical pc filter")
+    property("use_statistical_filter","bool",false).doc("Use statistical pc filtering or not")
     
     # obstacle detection parameters
     property("laplacian_kernel_size","int",9).doc("Size of the kernel used in the laplacian to detect rocks edges")
@@ -53,7 +54,7 @@ task_context "Task" do
     property("global_safety_offset","float",7.0).doc("Assuming the rover can not go into negative coordinates, how much margin more to have from (0,0) so that projected point cloud would not end up in negative coordinates")
 
 	# cost map properties
-    property("obstacle_cost_dilation","int",24).doc("Kernel size for how much an obstacle is dilated so that the rover can be considered a point")
+	property("robot_size","float",0.7).doc("in meters, needed for obstacle dilation")    
     property("obstacle_cost_dilation_niter","int",1).doc("Number of iterations of the cost dilation")
 	property("obstacle_blur","int",35).doc("Kernel size used to blur the cost map. Represent how far the influence of an obstacle spreads from its border")
     property("obstacle_blur_max_cost","float",15.0).doc("Maximum cost added by obstacle blur")
@@ -62,15 +63,21 @@ task_context "Task" do
 	property("cost_base","float",1.0).doc("Minimum cost")
 	property("cost_offset","float",3.0).doc("Cost offset")
 	property("cost_max","float",21.0).doc("Maximum cost a cell can have. This cost means the cell is not traversable")
+	property("cost_update_area","float",20.0).doc("Cost update area in meters (area around the rover where the cost map is updated")
 
 	# envire properties
 	property("envire_origin","int",233).doc("Cell that must be origin for envire")
 	property("envire_size","int",300).doc("Cell that must be origin for envire")
+	property("reach_goal","/base/Vector3d").doc("Goal the cartographer has to reach")
+
 
     # INPUT PORTS
     input_port("distance_image", "/base/samples/DistanceImage" )
     input_port("pose_vicon", "base/samples/RigidBodyState").doc "Position and orientation of the Robot given by vicon"
     input_port("pose_imu", "base/samples/RigidBodyState").doc "Orientation of the Robot given by IMU"
+	input_port("pose_in", "base/samples/RigidBodyState").doc "Total pose, either this one or imu and vicon separately"
+	input_port("ptu_pan", "double").doc "PTU pan angle in degrees!!"
+	input_port("ptu_tilt", "double").doc "PTU tilt angle in degrees!!"
     input_port("pose_ptu", "base/samples/RigidBodyState").doc "Orientation of PTU"
 	input_port("sync_in", "int")
 
@@ -96,16 +103,19 @@ task_context "Task" do
 	
     output_port('traversability_map', ro_ptr('std/vector</envire/BinaryEvent>'))
     
+    output_port("goal", "base/samples/RigidBodyState").doc "Position the cartographer should reach"
+    
     # an incremental number is written to this port after each iteration
     # of the update hook
-	output_port "sync_out", "int"
+	output_port "sync_out", "bool"
 	
 	# TRANSFORMERS
 	transformer do
 		transform "imu", "world_osg"
 		transform "body", "world_osg"
+		transform "body", "viso_world"
 		#align_port "current_pose"
-		max_latency 0.2
+		max_latency 1.0
 	end
     
     port_driven

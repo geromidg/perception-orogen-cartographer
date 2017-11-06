@@ -161,6 +161,7 @@ bool Task::startHook()
      
     // set goal
     Eigen::Vector3d goal = _reach_goal.get();
+    base::samples::RigidBodyState goal_rbs;
     goal_rbs.position = goal;
 	_goal.write(goal_rbs);
 	
@@ -194,9 +195,9 @@ void Task::updateHook()
 			t1[2] = base::Time::now();
 
 			//********************Transforms******************************************
-
+			
 			// Body attitude and psoition source choice
-
+			
 			// a component is connected giving already a pose referenced to the rover geometrical center
 			double x_pos, y_pos, z_pos;
 			double yaw, pitch, roll, tmp_yaw;
@@ -207,12 +208,15 @@ void Task::updateHook()
 
 				Eigen::Affine3d tf_pose;
 				// damn transformer, if a total pose is given, the target MUST be gnns_utm both here, in the .orogen and in the damn component providing the pose
-				if(!_body2viso_world.get(distance_image.time, tf_pose, false))
+				//if(!_body2viso_world.get(distance_image.time, tf_pose, false))
+				if(!_body2viso_world.get(base::Time::now(), tf_pose, false))
 				{
 					//throw std::runtime_error("[Cartographer] [FATAL ERROR]: transformation for transformer imu2gnss_utm not found.");
 					//return;
-              
-				} 
+                    std::cout << "NO TRAFO\n";
+				} else {
+                    std::cout << "GOT TRAFO\n";
+                }
 				// roll, pitch, yaw
 				pose_in.orientation = Eigen::Quaterniond(tf_pose.linear());
 
@@ -225,6 +229,8 @@ void Task::updateHook()
 				x_pos = tf_pose.translation().x();
 				y_pos = tf_pose.translation().y();
 				z_pos = tf_pose.translation().z();
+				
+				//std::cout << "CARTOGRAPHER KLJ " << x_pos << " " << y_pos << " " << z_pos << std::endl;
 				
 				attitude = Eigen::Quaternion <double> (Eigen::AngleAxisd(yaw+body_rotation_offset[0], Eigen::Vector3d::UnitZ())*
 											Eigen::AngleAxisd(pitch+body_rotation_offset[1], Eigen::Vector3d::UnitY()) *
@@ -275,13 +281,9 @@ void Task::updateHook()
 			double ptu_pitch, ptu_yaw;
 			_ptu_pan.read(ptu_yaw);
 			_ptu_tilt.read(ptu_pitch);
-			//ptu_pitch += 45.0;
-//			ptu_pitch -= 90.0;
 			//ptu_pitch -= 90.0;
-//			ptu_pitch *=-2;
-			//ptu_pitch += 45.0;
+			//ptu_pitch *=-2;
 			ptu_pitch = (180 - ptu_pitch)/2;
-			ptu_pitch -= 12.5;
 			ptu_pitch = ptu_pitch/180.0*M_PI;
 			ptu_yaw = ptu_yaw/180.0*M_PI;
 			Eigen::Quaterniond ptu_attitude;
@@ -501,9 +503,6 @@ void Task::updateHook()
 			bool tmpbool = true;
 			_sync_out.write(tmpbool);
 			sync_count++;
-			
-			_goal.write(goal_rbs);
-
 	}
 }
 
