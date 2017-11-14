@@ -11,15 +11,7 @@
   <depend package="base/orogen/types" />
   <depend package="slam/pcl" />
   <depend package="slam/orogen/pcl" />
-  <depend package="slam/orogen/envire" />
   <depend package="perception/cartographer" />
   <depend package="drivers/orogen/aggregator" />
   <depend package="drivers/orogen/transformer" />
-  <!--
-   To add any dependencies use the depend tag
-  <depend package="dummy-dependency-0" />
-	...
-  <depend package="dummy-dependency-n-1" />
-  <depend package="dummy-dependency-n" />
-  -->
 </package>

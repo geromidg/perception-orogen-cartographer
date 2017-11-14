@@ -13,15 +13,6 @@
 #include <pcl/point_cloud.h>
 
 #include <cartographer/localMap.hpp>
-#include <cartographer/globalMap.hpp>
-#include <cartographer/costMap.hpp>
-
-
-namespace envire {
-    class Environment;
-    class FrameNode;
-    class TraversabilityGrid;
-}
 
 namespace cartographer {
 
@@ -31,65 +22,54 @@ namespace cartographer {
      * In order to modify the interfaces you should (re)use oroGen and rely on the associated workflow.
      * Declare a new task context (i.e., a component)
 
-The corresponding C++ class can be edited in tasks/Task.hpp and
-tasks/Task.cpp, and will be put in the cartographer namespace.
+     The corresponding C++ class can be edited in tasks/Task.hpp and
+     tasks/Task.cpp, and will be put in the cartographer namespace.
      * \details
      * The name of a TaskContext is primarily defined via:
      \verbatim
      deployment 'deployment_name'
-         task('custom_task_name','cartographer::Task')
+     task('custom_task_name','cartographer::Task')
      end
      \endverbatim
      *  It can be dynamically adapted when the deployment is called with a prefix argument. 
      */
-     
-	struct NullDeleter
+
+    struct NullDeleter
     {
         void operator()(void const *) const {}
-	};
-     
+    };
+
     class Task : public TaskBase
     {
-	friend class TaskBase;
-    protected:
-    
-		envire::Environment* mpEnv;
-		envire::FrameNode* mpFrameNode;
-		envire::TraversabilityGrid* mpTravGrid;
-		int Nrow, Ncol;
-		static const unsigned char SBPL_MAX_COST = 20;
-        // SBPL COST TO CLASS ID MAPPING
-		int sbplCostToClassID[SBPL_MAX_COST+1];
+        friend class TaskBase;
+        protected:
 
-		LocalMap local_map;
-		GlobalMap global_height_map, global_obstacle_map;
-		GlobalMap global_slope_map, global_slope_thresh_map;
-		CostMap cost_map;
-		base::samples::DistanceImage distance_image;
-		pcl::PointCloud<pcl::PointXYZ> input_cloud;
-		base::samples::Pointcloud try_cloud;
-		frame_helper::StereoCalibration calibration;
-		base::samples::RigidBodyState pose_ptu;
-		base::samples::RigidBodyState pose_imu;
-		base::samples::RigidBodyState pose_vicon;
-		base::samples::RigidBodyState pose_in;
-		base::samples::RigidBodyState goal_rbs;
+        LocalMap local_map;
+        base::samples::DistanceImage distance_image;
+        pcl::PointCloud<pcl::PointXYZ> input_cloud;
+        base::samples::Pointcloud try_cloud;
+        frame_helper::StereoCalibration calibration;
+        base::samples::RigidBodyState pose_ptu;
+        base::samples::RigidBodyState pose_imu;
+        base::samples::RigidBodyState pose_vicon;
+        base::samples::RigidBodyState pose_in;
+        base::samples::RigidBodyState goal_rbs;
 
 
-		int sync_count;
-		
-		// Translations/Rotations
-		Eigen::Vector3d camera_to_ptu;	
-		Eigen::Vector3d ptu_to_center;
-		Eigen::Vector3d ptu_rotation_offset;
-		Eigen::Vector3d body_rotation_offset;
-		
-		// Rover characteristics
-		float rover_normal_clearance;
-		int laplacian_kernel_size;
-		float rover_normal_gradeability;
+        int sync_count;
 
-    public:
+        // Translations/Rotations
+        Eigen::Vector3d camera_to_ptu;	
+        Eigen::Vector3d ptu_to_center;
+        Eigen::Vector3d ptu_rotation_offset;
+        Eigen::Vector3d body_rotation_offset;
+
+        // Rover characteristics
+        float rover_normal_clearance;
+        int laplacian_kernel_size;
+        float rover_normal_gradeability;
+
+        public:
         /** TaskContext constructor for Task
          * \param name Name of the task. This name needs to be unique to make it identifiable via nameservices.
          * \param initial_state The initial TaskState of the TaskContext. Default is Stopped state.
@@ -103,10 +83,10 @@ tasks/Task.cpp, and will be put in the cartographer namespace.
          */
         Task(std::string const& name, RTT::ExecutionEngine* engine);
 
- 
+
         /** Default deconstructor of Task
-         */
-		~Task();
+        */
+        ~Task();
 
         /** This hook is called by Orocos when the state machine transitions
          * from PreOperational to Stopped. If it returns false, then the
@@ -117,8 +97,8 @@ tasks/Task.cpp, and will be put in the cartographer namespace.
          * in the task context definition with (for example):
          \verbatim
          task_context "TaskName" do
-           needs_configuration
-           ...
+         needs_configuration
+         ...
          end
          \endverbatim
          */
@@ -165,11 +145,11 @@ tasks/Task.cpp, and will be put in the cartographer namespace.
          * before calling start() again.
          */
         void cleanupHook();
-        
+
         // borrowed from https://github.com/exoter-rover/slam-orogen-icp/blob/master/tasks/GIcp.hpp
         void fromPCLPointCloud(::base::samples::Pointcloud & pc, const pcl::PointCloud< pcl::PointXYZ >& pcl_pc, double density = 1.0);
 
-		base::samples::frame::Frame customCVconversion(cv::Mat CVimg);
+        base::samples::frame::Frame customCVconversion(cv::Mat CVimg);
     };
 }
 
