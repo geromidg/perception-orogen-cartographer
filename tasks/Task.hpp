@@ -48,7 +48,6 @@ namespace cartographer {
         base::samples::DistanceImage distance_image;
         pcl::PointCloud<pcl::PointXYZ> input_cloud;
         base::samples::Pointcloud try_cloud;
-        frame_helper::StereoCalibration calibration;
         base::samples::RigidBodyState pose_ptu;
         base::samples::RigidBodyState pose_imu;
         base::samples::RigidBodyState pose_vicon;

@@ -9,14 +9,12 @@ using_library "frame_helper"
 using_library "opencv"
 
 import_types_from "base"
-import_types_from "frame_helper/Calibration.h"
 
 task_context "Task" do
     
     needs_configuration
 
     # PROPERTIES
-    property("cameraCalibration", "/frame_helper/CameraCalibration").doc("Camera calibration parameters")
 
     # frame transformations
     property("camera_to_ptu","/base/Vector3d").doc("Translation vector from camera frame to pan tilt unit frame")

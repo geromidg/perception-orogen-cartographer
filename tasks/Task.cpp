@@ -32,10 +32,8 @@ bool Task::configureHook()
     if (! TaskBase::configureHook())
         return false;
 
-    frame_helper::CameraCalibration calib = _cameraCalibration.get();    
-
     // set algorithm parameters
-    local_map.setCameraParameters(calib.width,calib.height,calib.cx,calib.cy, calib.fx, calib.fy);
+    local_map.setCameraParameters(1024,768, 509.74846, 376.99711, 837.98636, 838.56569);
     local_map.setMapParameters(_local_map_size.get(),_local_map_resolution.get(),_slope_map_scale.get());
     local_map.setPcFiltersParameters(_leaf_size.get(),_k_points.get(), _use_statistical_filter.get());
     Eigen::Vector4d a = _pointcloud_cut_min.get();
