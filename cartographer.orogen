@@ -18,7 +18,7 @@ task_context "Task" do
     output_port "pointcloud_filter", "/base/samples/Pointcloud"
 
     transformer do
-        # transform "body", "world_osg"
+        transform "left_camera_viso2", "body"
 
         max_latency 1.0
     end
