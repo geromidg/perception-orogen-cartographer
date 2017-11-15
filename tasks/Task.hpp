@@ -34,41 +34,22 @@ namespace cartographer {
      *  It can be dynamically adapted when the deployment is called with a prefix argument. 
      */
 
-    struct NullDeleter
-    {
-        void operator()(void const *) const {}
-    };
-
     class Task : public TaskBase
     {
         friend class TaskBase;
-        protected:
 
+    protected:
         LocalMap local_map;
         base::samples::DistanceImage distance_image;
-        pcl::PointCloud<pcl::PointXYZ> input_cloud;
-        base::samples::Pointcloud try_cloud;
-        base::samples::RigidBodyState pose_ptu;
         base::samples::RigidBodyState pose_imu;
-        base::samples::RigidBodyState pose_vicon;
-        base::samples::RigidBodyState pose_in;
-        base::samples::RigidBodyState goal_rbs;
-
-
-        int sync_count;
 
         // Translations/Rotations
-        Eigen::Vector3d camera_to_ptu;	
+        Eigen::Vector3d camera_to_ptu;
         Eigen::Vector3d ptu_to_center;
         Eigen::Vector3d ptu_rotation_offset;
         Eigen::Vector3d body_rotation_offset;
 
-        // Rover characteristics
-        float rover_normal_clearance;
-        int laplacian_kernel_size;
-        float rover_normal_gradeability;
-
-        public:
+    public:
         /** TaskContext constructor for Task
          * \param name Name of the task. This name needs to be unique to make it identifiable via nameservices.
          * \param initial_state The initial TaskState of the TaskContext. Default is Stopped state.
