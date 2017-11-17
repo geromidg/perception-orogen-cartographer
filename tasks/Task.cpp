@@ -26,32 +26,26 @@ bool Task::configureHook()
     if (! TaskBase::configureHook())
         return false;
 
-    local_map.setCameraParameters(1024, 768,
-        // 509.74846, 376.99711, 837.98636, 838.56569);
-        652, 474, 1419, 1422);
-    local_map.setMapParameters(5.0, 0.03);
-    local_map.setPcFiltersParameters(15, 20, true);  // Change after cropping
-    // local_map.setPcFiltersParameters(0.015, 20, true);
+    local_map.setCameraParameters(1280, 960,
+        652.276264771, 474.063082006, 1419.81633673, 1422.08972277);
+    local_map.setMapParameters(22.0, 0.06);
+    local_map.setPcFiltersParameters(0.015, 20, false);
     local_map.setPcLimitsParameters(
-        Eigen::Vector4f(0.0, -2.0, -1.5, 0.0),
-        Eigen::Vector4f(4.0, 2.0, 1.5, 0.0));
+        Eigen::Vector4f(1.0, -10.0, -10.0, 0.0),
+        Eigen::Vector4f(15.0, 10.0, 10.0, 0.0));
 
-    // camera_to_ptu = Eigen::Vector3d(0.0, 0.06, 0.02);
-    // body_rotation_offset =  Eigen::Vector3d(0.0, 0.0, 0.0);
-    // ptu_to_center = Eigen::Vector3d(0.09, 0.0, 0.9);
-    // ptu_rotation_offset = Eigen::Vector3d(0.0, -0.07, 0.0);
-    camera_to_ptu = Eigen::Vector3d(0.0, 0.0, 0.0);
+    /* double ptu_pitch = 80; */
+    /* ptu_pitch = (180 - ptu_pitch) / 2; */
+    /* ptu_pitch -= 12.5; */
+    /* ptu_pitch = (ptu_pitch / 180.0) * M_PI; */
+    double ptu_pitch = -80.0;
+    ptu_pitch += (90.0 + 12.5);
+    ptu_pitch *= (M_PI / 180.0);
+
+    camera_to_ptu = Eigen::Vector3d(0.01, 0.25, 0.055);
     body_rotation_offset =  Eigen::Vector3d(0.0, 0.0, 0.0);
-    ptu_to_center = Eigen::Vector3d(0.058, 0.073, 0.527);
-    ptu_rotation_offset = Eigen::Vector3d(0.0, 0.58, 0.0);
-
-    return true;
-}
-
-bool Task::startHook()
-{
-    if (! TaskBase::startHook())
-        return false;
+    ptu_to_center = Eigen::Vector3d(0.138, -0.005, 1.86);
+    ptu_rotation_offset = Eigen::Vector3d(0.0, -0.05 + ptu_pitch, 0.0);
 
     return true;
 }
@@ -73,9 +67,11 @@ void Task::updateHook()
         Eigen::Quaterniond attitude = Eigen::Quaternion <double> (
                 Eigen::AngleAxisd(body_rotation_offset[0],
                     Eigen::Vector3d::UnitZ()) *
-                Eigen::AngleAxisd(body_rotation_offset[1] + pitch,
+                /* Eigen::AngleAxisd(body_rotation_offset[1] + pitch, */
+                Eigen::AngleAxisd(body_rotation_offset[1],
                     Eigen::Vector3d::UnitY()) *
-                Eigen::AngleAxisd(body_rotation_offset[2] + roll,
+                /* Eigen::AngleAxisd(body_rotation_offset[2] + roll, */
+                Eigen::AngleAxisd(body_rotation_offset[2],
                     Eigen::Vector3d::UnitX()));
 
         Eigen::Quaterniond ptu_attitude = Eigen::Quaternion <double> (
@@ -109,21 +105,6 @@ void Task::updateHook()
         fromPCLPointCloud(pp2, *p2, 1),
         _pointcloud_filter.write(pp2);
     }
-}
-
-void Task::errorHook()
-{
-    TaskBase::errorHook();
-}
-
-void Task::stopHook()
-{
-    TaskBase::stopHook();
-}
-
-void Task::cleanupHook()
-{
-    TaskBase::cleanupHook();
 }
 
 // borrowed from https://github.com/exoter-rover/slam-orogen-icp/blob/master/tasks/GIcp.cpp

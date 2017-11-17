@@ -84,13 +84,6 @@ namespace cartographer {
          */
         bool configureHook();
 
-        /** This hook is called by Orocos when the state machine transitions
-         * from Stopped to Running. If it returns false, then the component will
-         * stay in Stopped. Otherwise, it goes into Running and updateHook()
-         * will be called.
-         */
-        bool startHook();
-
         /** This hook is called by Orocos when the component is in the Running
          * state, at each activity step. Here, the activity gives the "ticks"
          * when the hook should be called.
@@ -106,25 +99,6 @@ namespace cartographer {
          * it again. Finally, FatalError cannot be recovered.
          */
         void updateHook();
-
-        /** This hook is called by Orocos when the component is in the
-         * RunTimeError state, at each activity step. See the discussion in
-         * updateHook() about triggering options.
-         *
-         * Call recover() to go back in the Runtime state.
-         */
-        void errorHook();
-
-        /** This hook is called by Orocos when the state machine transitions
-         * from Running to Stopped after stop() has been called.
-         */
-        void stopHook();
-
-        /** This hook is called by Orocos when the state machine transitions
-         * from Stopped to PreOperational, requiring the call to configureHook()
-         * before calling start() again.
-         */
-        void cleanupHook();
 
         // borrowed from https://github.com/exoter-rover/slam-orogen-icp/blob/master/tasks/GIcp.hpp
         void fromPCLPointCloud(::base::samples::Pointcloud & pc, const pcl::PointCloud< pcl::PointXYZ >& pcl_pc, double density = 1.0);
