@@ -27,25 +27,19 @@ bool Task::configureHook()
         return false;
 
     local_map.setCameraParameters(1280, 960,
-        652.276264771, 474.063082006, 1419.81633673, 1422.08972277);
+        651.850565473, 471.147308853, 1636.20761888, 1637.33777994);
     local_map.setMapParameters(22.0, 0.06);
-    local_map.setPcFiltersParameters(0.015, 20, false);
+    local_map.setPcFiltersParameters(0.05, 20, false);
     local_map.setPcLimitsParameters(
-        Eigen::Vector4f(1.0, -10.0, -10.0, 0.0),
-        Eigen::Vector4f(15.0, 10.0, 10.0, 0.0));
+        Eigen::Vector4f(0.0, -6.0, -6.0, 0.0),
+        Eigen::Vector4f(6.0, 6.0, 6.0, 0.0));
 
-    /* double ptu_pitch = 80; */
-    /* ptu_pitch = (180 - ptu_pitch) / 2; */
-    /* ptu_pitch -= 12.5; */
-    /* ptu_pitch = (ptu_pitch / 180.0) * M_PI; */
-    double ptu_pitch = -80.0;
-    ptu_pitch += (90.0 + 12.5);
-    ptu_pitch *= (M_PI / 180.0);
-
-    camera_to_ptu = Eigen::Vector3d(0.01, 0.25, 0.055);
+    camera_to_ptu = Eigen::Vector3d(0.0, 0.0, 0.0);
     body_rotation_offset =  Eigen::Vector3d(0.0, 0.0, 0.0);
-    ptu_to_center = Eigen::Vector3d(0.138, -0.005, 1.86);
-    ptu_rotation_offset = Eigen::Vector3d(0.0, -0.05 + ptu_pitch, 0.0);
+    /* ptu_to_center = Eigen::Vector3d(0.4265, 0.129, 0.491); */
+    ptu_to_center = Eigen::Vector3d(0.4265, 0.129, 1.491);
+    /* ptu_rotation_offset = Eigen::Vector3d(0.00525, 0.0212, -0.29635); */
+    ptu_rotation_offset = Eigen::Vector3d(0.00525, 0.3212, -0.06635);
 
     return true;
 }
@@ -56,10 +50,6 @@ void Task::updateHook()
 
     if(_distance_image.read(distance_image) == RTT::NewData)
     {
-        // Eigen::Affine3d tf;
-        // if (!_left_camera_viso22body.get(distance_image.time, tf, false))
-            // std::cout << "[Cartographer] Error getting TF!" << std::endl;
-
         _pose_imu.read(pose_imu);
         double roll = -pose_imu.getRoll();
         double pitch = -pose_imu.getPitch();
@@ -67,11 +57,9 @@ void Task::updateHook()
         Eigen::Quaterniond attitude = Eigen::Quaternion <double> (
                 Eigen::AngleAxisd(body_rotation_offset[0],
                     Eigen::Vector3d::UnitZ()) *
-                /* Eigen::AngleAxisd(body_rotation_offset[1] + pitch, */
-                Eigen::AngleAxisd(body_rotation_offset[1],
+                Eigen::AngleAxisd(body_rotation_offset[1] + pitch,
                     Eigen::Vector3d::UnitY()) *
-                /* Eigen::AngleAxisd(body_rotation_offset[2] + roll, */
-                Eigen::AngleAxisd(body_rotation_offset[2],
+                Eigen::AngleAxisd(body_rotation_offset[2] + roll,
                     Eigen::Vector3d::UnitX()));
 
         Eigen::Quaterniond ptu_attitude = Eigen::Quaternion <double> (
